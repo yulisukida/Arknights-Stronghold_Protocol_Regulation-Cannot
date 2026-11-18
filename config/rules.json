@@ -1,0 +1,350 @@
+[
+  {
+    "id": "r01die",
+    "created": 0,
+    "name": "死亡-点退出按钮",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\avatar_dead.png",
+    "threshold": 0.92,
+    "region": [
+      10,
+      150,
+      120,
+      500
+    ],
+    "click": "none",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [
+      [
+        65,
+        90
+      ]
+    ],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r02conf",
+    "created": 0,
+    "name": "死亡-确认退出",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_confirm_exit.png",
+    "threshold": 0.85,
+    "region": [
+      0,
+      440,
+      1280,
+      110
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r12bconf",
+    "created": 0,
+    "name": "奖励-点确认悬赏",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_confirm_bounty.png",
+    "threshold": 0.85,
+    "region": [
+      150,
+      110,
+      970,
+      610
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r11bounty",
+    "created": 0,
+    "name": "奖励-选悬赏",
+    "template": "",
+    "threshold": 0.85,
+    "region": null,
+    "bright_slots": [
+      [
+        285,
+        127
+      ],
+      [
+        665,
+        127
+      ],
+      [
+        980,
+        127
+      ],
+      [
+        285,
+        427
+      ],
+      [
+        665,
+        427
+      ],
+      [
+        980,
+        427
+      ]
+    ],
+    "bright_thresh": 150.0,
+    "bright_min": 5,
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "dark_slots": [
+      [
+        285,
+        250
+      ],
+      [
+        665,
+        250
+      ],
+      [
+        980,
+        250
+      ],
+      [
+        285,
+        550
+      ],
+      [
+        665,
+        550
+      ],
+      [
+        980,
+        550
+      ]
+    ],
+    "dark_offset": [
+      0,
+      85
+    ],
+    "dark_thresh": 100.0,
+    "dark_clicks": 1,
+    "once_per_appearance": false,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r03cont",
+    "created": 0,
+    "name": "结算-继续搜寻",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_continue_search.png",
+    "threshold": 0.85,
+    "region": [
+      640,
+      360,
+      640,
+      360
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r04buy",
+    "created": 0,
+    "name": "对局-买人并准备",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_ready_red.png",
+    "threshold": 0.85,
+    "region": [
+      640,
+      0,
+      640,
+      360
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [
+      [
+        1000,
+        645
+      ],
+      [
+        1000,
+        645
+      ]
+    ],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r05rdy",
+    "created": 0,
+    "name": "准备-点准备就绪",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_ready_green.png",
+    "threshold": 0.85,
+    "region": [
+      640,
+      360,
+      640,
+      360
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r06cfrm",
+    "created": 0,
+    "name": "策略-点确认选择",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_confirm_choice.png",
+    "threshold": 0.85,
+    "region": [
+      640,
+      360,
+      640,
+      360
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r07cann",
+    "created": 0,
+    "name": "策略-点坎诺特",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\card_cannot.png",
+    "threshold": 0.85,
+    "region": [
+      500,
+      130,
+      720,
+      570
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r08scrll",
+    "created": 0,
+    "name": "策略-下滑找坎诺特",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\hdr_23_strategy.png",
+    "threshold": 0.85,
+    "region": [
+      400,
+      30,
+      400,
+      80
+    ],
+    "click": "scroll",
+    "scroll": 48,
+    "scroll_repeat": 4,
+    "swipe_dist": 150,
+    "offset": [
+      270,
+      353
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r09tmate",
+    "created": 0,
+    "name": "开始-点搜寻队友",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_search_teammate.png",
+    "threshold": 0.85,
+    "region": [
+      640,
+      360,
+      640,
+      360
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  },
+  {
+    "id": "r10start",
+    "created": 0,
+    "name": "开始-点开始搜寻",
+    "template": "C:\\Users\\win11\\screenbot\\templates\\btn_start_search.png",
+    "threshold": 0.85,
+    "region": [
+      640,
+      360,
+      640,
+      360
+    ],
+    "click": "left",
+    "scroll": 5,
+    "offset": [
+      0,
+      0
+    ],
+    "pre_clicks": [],
+    "pre_delay": 0.6,
+    "max_clicks": 0,
+    "enabled": true
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "priority_mode": true,
+  "cycle_interval": 4.0,
+  "use_window": true,
+  "window_title": "明日方舟",
+  "background_mode": true,
+  "bg_click_postmsg": true
+}
