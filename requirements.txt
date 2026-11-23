@@ -4,3 +4,5 @@ opencv-python
 pyautogui
 pynput
 pillow
+pygetwindow
+rapidocr-onnxruntime

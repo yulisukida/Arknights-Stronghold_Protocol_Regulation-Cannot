@@ -236,11 +236,11 @@ class RuleEditor(tk.Toplevel):
             self.tpl_var.set(p)
 
     def _test_match(self):
+        from core import scanner
         path = self.tpl_var.get()
-        if not path or not os.path.isfile(path):
+        if not path or scanner.load_template(path) is None:
             messagebox.showwarning("测试", "请先选择模板图片", parent=self)
             return
-        from core import scanner
         full, frame, is_win, _hwnd = scanner.grab_frame(self.settings)
         if full is None:
             messagebox.showwarning(
@@ -263,9 +263,11 @@ class RuleEditor(tk.Toplevel):
 
     def _save(self):
         click = CLICK_KINDS[self.click_var.get()]
-        self.result = {
-            "id": self.rule["id"],
-            "created": self.rule["created"],
+        # Start from the original rule so advanced fields the editor doesn't
+        # expose (upgrade_*, consecutive_restart, bright_*, swipe_dist, ...)
+        # are preserved instead of being wiped on every save.
+        result = dict(self.rule)
+        result.update({
             "name": self.name_var.get().strip() or "未命名",
             "template": self.tpl_var.get().strip(),
             "threshold": round(self.thr_var.get(), 2),
@@ -282,5 +284,6 @@ class RuleEditor(tk.Toplevel):
             "cooldown": self.cd_var.get(),
             "max_clicks": self.mc_var.get(),
             "enabled": self.enabled_var.get(),
-        }
+        })
+        self.result = result
         self.destroy()

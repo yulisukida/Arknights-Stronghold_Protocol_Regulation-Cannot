@@ -60,7 +60,10 @@ class App(tk.Tk):
         self.run_btn.pack(side="left")
         self.stop_btn = ttk.Button(bar, text="■ 停止 (F9)", command=self._stop,
                                    state="disabled")
-        self.stop_btn.pack(side="left", padx=(4, 12))
+        self.stop_btn.pack(side="left", padx=(4, 4))
+        self.test_restart_btn = ttk.Button(bar, text="测试重启(锁屏)",
+                                           command=self._test_restart)
+        self.test_restart_btn.pack(side="left", padx=(0, 12))
 
         opt = ttk.Frame(bar)
         opt.pack(side="right")
@@ -211,6 +214,46 @@ class App(tk.Tk):
         self.stop_btn.state(["disabled"])
         self.status.set("● 已停止")
         self._refresh_tree()
+
+    def _test_restart(self):
+        """Lock the PC, then kill + relaunch the game through the launcher
+        while locked. Unlock later and check the log / whether the game is up.
+        The engine is paused during the test and resumed afterwards."""
+        if not messagebox.askyesno(
+                "测试重启",
+                "将立即锁屏，然后在锁屏状态下关闭游戏并通过启动器重新启动。\n"
+                "游戏当前进度会丢失。继续？"):
+            return
+        import ctypes
+        import threading
+        from core import restart
+        was_running = self.engine.is_running()
+        if was_running:
+            self._stop()
+        self.test_restart_btn.state(["disabled"])
+        title = self.title_var.get().strip() or self.settings.get("window_title", "")
+        exe = self.settings.get("game_exe", "")
+
+        def work():
+            q = self.engine.events
+            q.put(("log", "[测试重启] 锁屏，5 秒后开始重启"))
+            ctypes.windll.user32.LockWorkStation()
+            time.sleep(5)
+            t0 = time.strftime("%H:%M:%S")
+            try:
+                ok, msg = restart.restart_game(title, exe)
+            except Exception as exc:
+                ok, msg = False, f"异常: {exc}"
+            q.put(("log", f"[测试重启] {t0} 开始 -> {time.strftime('%H:%M:%S')} "
+                          f"{'成功' if ok else '失败'}: {msg}"))
+            self.after(0, lambda: self._test_restart_done(was_running))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _test_restart_done(self, resume):
+        self.test_restart_btn.state(["!disabled"])
+        if resume:
+            self._start()
 
     def _toggle(self):
         if self.engine.is_running():

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
 
 BUILD_NAME = "ScreenBot"                       # ASCII, safe for PyInstaller
-FINAL_NAME = "卫戍协议坎诺特挂机工具.exe"        # what the user sees
+FINAL_NAME = "卫戍协议坎诺特挂机工具_v2.exe"     # what the user sees (v2 upgrade)
 
 
 def run(cmd: list[str]) -> None:
@@ -34,14 +34,29 @@ run([sys.executable, "-m", "PyInstaller",
      "--add-data", "config;config",
      "--add-data", "templates;templates",
      "--add-data", "assets;assets",
+     "--collect-all", "rapidocr_onnxruntime",
+     # heavy environment packages the tool/OCR never use -> keep the exe small
+     "--exclude-module", "torch",
+     "--exclude-module", "torchvision",
+     "--exclude-module", "torchaudio",
+     "--exclude-module", "functorch",
+     "--exclude-module", "torchgen",
+     "--exclude-module", "pandas",
+     "--exclude-module", "scipy",
+     "--exclude-module", "matplotlib",
      "--name", BUILD_NAME, "main.py"])
 
 src = ROOT / (BUILD_NAME + ".exe")
 dst = ROOT / FINAL_NAME
 if src.exists():
-    if dst.exists():
-        dst.unlink()
-    os.replace(src, dst)
+    try:
+        if dst.exists():
+            dst.unlink()
+        os.replace(src, dst)
+    except PermissionError:
+        print("\n注意：目标 exe 正在运行被占用，无法改名。", flush=True)
+        print("已生成 ScreenBot.exe（含全部功能）。请关闭正在运行的程序后，", flush=True)
+        print("手动把 ScreenBot.exe 改名为", FINAL_NAME, "，或重新运行 build。", flush=True)
 
 if (ROOT / "dist").exists():
     shutil.rmtree(ROOT / "dist", ignore_errors=True)

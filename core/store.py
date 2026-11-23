@@ -13,6 +13,7 @@ DEFAULTS = {
     "scroll": 5,             # wheel notches for the scroll action (foreground)
     "scroll_repeat": 1,      # scroll bursts per trigger
     "swipe_dist": 150,       # background scroll = drag this many px per burst
+    "scroll_settle": 0.5,    # seconds to wait after a swipe before re-checking
     "offset": [0, 0],
     "pre_clicks": [],        # [[x, y], ...] clicked (absolute) before the main action
     "pre_delay": 0.6,        # seconds between pre-clicks and before the main click
@@ -24,6 +25,15 @@ DEFAULTS = {
     "bright_thresh": 150.0,  # brightness of the brightest row in the sampled strip
     "bright_min": 0,         # how many bright_slots must pass (0 = all)
     "once_per_appearance": False,  # rearm only when the template disappears
+    "consecutive_restart": 0,      # watchdog: N consecutive matches -> restart game (0=off)
+    "match_color": False,          # True = BGR color match (distinguish same-shape diff-color buttons)
+    "battle_flow": False,          # True = run MAA-style in-game prep flow (gold/buy/deploy/upgrade/ready)
+    "upgrade_template": "",        # if set, read gold and click this (升级) button when rich
+    "upgrade_if_gold_gt": 30,      # upgrade only when gold exceeds this
+    "upgrade_clicks": 2,           # times to click the upgrade button
+    "upgrade_threshold": 0.8,
+    "upgrade_region": None,        # search area for the shifting upgrade button
+    "gold_region": None,           # gold number box (None = OCR default position)
     "interval": 1.0,
     "cooldown": 2.0,
     "max_clicks": 0,         # 0 = unlimited
@@ -75,6 +85,9 @@ DEFAULT_SETTINGS = {
     "emu_mode": False,       # capture+input through ADB (Android emulator)
     "adb_addr": "127.0.0.1:7555",
     "adb_exe": "adb",
+    "game_exe": "",          # PC client exe for watchdog restart (auto-discovered if empty)
+    "daily_restart_hhmm": "04:01",  # scheduled daily restart time ("" disables)
+    "stuck_restart_minutes": 20,    # restart after this many minutes with no hit (0=off)
 }
 
 

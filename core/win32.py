@@ -16,6 +16,7 @@ user32 = ctypes.windll.user32
 gdi32 = ctypes.windll.gdi32
 
 PW_RENDERFULLCONTENT = 0x00000002
+PW_CLIENTONLY = 0x00000001
 
 WM_ACTIVATE = 0x0006
 WA_ACTIVE = 1
@@ -102,6 +103,29 @@ class _BITMAPINFO(ctypes.Structure):
                 ("bmiColors", wintypes.DWORD * 3)]
 
 
+# --- GDI / client-DC bindings for client-only capture (64-bit handle safe) ---
+user32.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+user32.PrintWindow.restype = wintypes.BOOL
+user32.GetDC.argtypes = [wintypes.HWND]
+user32.GetDC.restype = wintypes.HDC
+user32.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
+user32.ReleaseDC.restype = ctypes.c_int
+gdi32.CreateCompatibleDC.argtypes = [wintypes.HDC]
+gdi32.CreateCompatibleDC.restype = wintypes.HDC
+gdi32.CreateCompatibleBitmap.argtypes = [wintypes.HDC, ctypes.c_int, ctypes.c_int]
+gdi32.CreateCompatibleBitmap.restype = ctypes.c_void_p
+gdi32.SelectObject.argtypes = [wintypes.HDC, ctypes.c_void_p]
+gdi32.SelectObject.restype = ctypes.c_void_p
+gdi32.DeleteObject.argtypes = [ctypes.c_void_p]
+gdi32.DeleteObject.restype = wintypes.BOOL
+gdi32.DeleteDC.argtypes = [wintypes.HDC]
+gdi32.DeleteDC.restype = wintypes.BOOL
+gdi32.GetDIBits.argtypes = [wintypes.HDC, ctypes.c_void_p, wintypes.UINT,
+                            wintypes.UINT, ctypes.c_void_p,
+                            ctypes.POINTER(_BITMAPINFO), wintypes.UINT]
+gdi32.GetDIBits.restype = ctypes.c_int
+
+
 def _normalize_content(img):
     """If the rendered content sits inside a black margin (DWM invisible
     borders, DPI-scaled rendering), crop to its bbox and stretch back to the
@@ -124,6 +148,20 @@ def window_rect(hwnd):
     r = wintypes.RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(r))
     return r.left, r.top, r.right - r.left, r.bottom - r.top
+
+
+def client_rect(hwnd):
+    """Client-area size (pure game, no title bar/borders), e.g. 1280x720."""
+    r = wintypes.RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(r))
+    return r.right - r.left, r.bottom - r.top
+
+
+def client_origin(hwnd):
+    """Screen coords of the client-area top-left (for client->screen mapping)."""
+    pt = wintypes.POINT(0, 0)
+    _CLIENTTOSCREEN(hwnd, ctypes.byref(pt))
+    return int(pt.x), int(pt.y)
 
 
 def is_minimized(hwnd) -> bool:
@@ -188,43 +226,43 @@ def pseudo_check_foreground(hwnd) -> None:
 
 
 def capture_window(hwnd):
-    """BGR ndarray of the whole window (incl. title bar), or None on failure."""
+    """BGR ndarray of the CLIENT area only (pure game, no Windows title bar),
+    matching MAA's 1280x720 basis. Replicates MAA PrintWindowScreencap:
+    GetDC (client DC) + CreateCompatibleBitmap + PrintWindow(PW_CLIENTONLY |
+    PW_RENDERFULLCONTENT) + GetDIBits. None on failure."""
     pseudo_minimize(hwnd)
     pseudo_check_foreground(hwnd)
-    left, top, w, h = window_rect(hwnd)
+    w, h = client_rect(hwnd)
     if w <= 1 or h <= 1:
         return None
-    src_dc = user32.GetWindowDC(hwnd)
-    if not src_dc:
+    hdc = user32.GetDC(hwnd)
+    if not hdc:
         return None
-    mem_dc = gdi32.CreateCompatibleDC(src_dc)
-    bmi = _BITMAPINFO()
-    bmi.bmiHeader.biSize = ctypes.sizeof(_BITMAPINFOHEADER)
-    bmi.bmiHeader.biWidth = w
-    bmi.bmiHeader.biHeight = -h   # top-down
-    bmi.bmiHeader.biPlanes = 1
-    bmi.bmiHeader.biBitCount = 32
-    bits = ctypes.c_void_p()
-    dib = gdi32.CreateDIBSection(src_dc, ctypes.byref(bmi), 0,
-                                 ctypes.byref(bits), None, 0)
-    old = gdi32.SelectObject(mem_dc, dib)
-    ok = user32.PrintWindow(hwnd, mem_dc, PW_RENDERFULLCONTENT)
+    mem_dc = gdi32.CreateCompatibleDC(hdc)
+    bitmap = gdi32.CreateCompatibleBitmap(hdc, w, h)
+    old = gdi32.SelectObject(mem_dc, bitmap)
+    ok = user32.PrintWindow(hwnd, mem_dc, PW_CLIENTONLY | PW_RENDERFULLCONTENT)
     img = None
     if ok:
-        buf = (ctypes.c_ubyte * (w * h * 4)).from_address(bits.value)
-        arr = np.frombuffer(buf, np.uint8).reshape(h, w, 4)
-        img = np.ascontiguousarray(arr[:, :, :3])
-        # GPU-rendered clients (Unity etc.) print black while title bar looks
-        # normal: judge validity by the central area, not the whole frame.
-        center = img[h // 4:3 * h // 4, w // 4:3 * w // 4]
-        if center.size == 0 or float(center.mean()) < 8.0:
-            img = None
-        else:
-            img = _normalize_content(img)
+        bmi = _BITMAPINFO()
+        bmi.bmiHeader.biSize = ctypes.sizeof(_BITMAPINFOHEADER)
+        bmi.bmiHeader.biWidth = w
+        bmi.bmiHeader.biHeight = -h   # top-down
+        bmi.bmiHeader.biPlanes = 1
+        bmi.bmiHeader.biBitCount = 32
+        bmi.bmiHeader.biCompression = 0   # BI_RGB
+        buf = (ctypes.c_ubyte * (w * h * 4))()
+        got = gdi32.GetDIBits(mem_dc, bitmap, 0, h, buf, ctypes.byref(bmi), 0)
+        if got:
+            arr = np.frombuffer(buf, np.uint8).reshape(h, w, 4)
+            img = np.ascontiguousarray(arr[:, :, :3])
+            center = img[h // 4:3 * h // 4, w // 4:3 * w // 4]
+            if center.size == 0 or float(center.mean()) < 8.0:
+                img = None
     gdi32.SelectObject(mem_dc, old)
-    gdi32.DeleteObject(dib)
+    gdi32.DeleteObject(bitmap)
     gdi32.DeleteDC(mem_dc)
-    user32.ReleaseDC(hwnd, src_dc)
+    user32.ReleaseDC(hwnd, hdc)
     return img
 
 
@@ -314,9 +352,57 @@ def post_scroll(hwnd, sx: int, sy: int, notches: int) -> None:
     _restore_window(hwnd, wl, wt)
 
 
+class Drag:
+    """Hold-the-button drag in pieces, so the screen can be captured while
+    the finger is still down (e.g. to see green deployable tiles). Uses the
+    same window-follows-cursor trick as post_swipe. Coordinates are CLIENT
+    (game 1280x720) coords, so they stay valid while the window is moved;
+    capture_window() also returns client pixels, independent of position."""
+
+    def __init__(self, hwnd, cx: int, cy: int):
+        self.hwnd = hwnd
+        pseudo_minimize(hwnd)
+        self.wl, self.wt, _w, _h = window_rect(hwnd)
+        self.x, self.y = int(cx), int(cy)
+        _POST(hwnd, WM_ACTIVATE, WA_ACTIVE, 0)
+        time.sleep(0.01)
+        _align_window(hwnd, self.x, self.y)
+        time.sleep(0.01)
+        lp = _mkparam(self.x, self.y)
+        _POST(hwnd, WM_MOUSEMOVE, MK_LBUTTON, lp)
+        time.sleep(0.01)
+        _POST(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lp)
+        time.sleep(0.03)
+
+    def move(self, cx: int, cy: int, steps: int = 10, duration: float = 0.25):
+        x2, y2 = int(cx), int(cy)
+        x1, y1 = self.x, self.y
+        delay = max(0.005, duration / max(1, steps))
+        for i in range(1, steps + 1):
+            t = i / steps
+            mx = int(round(x1 + (x2 - x1) * t))
+            my = int(round(y1 + (y2 - y1) * t))
+            _align_window(self.hwnd, mx, my)
+            _POST(self.hwnd, WM_MOUSEMOVE, MK_LBUTTON, _mkparam(mx, my))
+            time.sleep(delay)
+        self.x, self.y = x2, y2
+
+    def hold(self, seconds: float):
+        lp = _mkparam(self.x, self.y)
+        n = max(1, int(seconds / 0.04))
+        for _ in range(n):
+            _POST(self.hwnd, WM_MOUSEMOVE, MK_LBUTTON, lp)
+            time.sleep(seconds / n)
+
+    def release(self, hold: float = 0.3):
+        self.hold(hold)
+        _POST(self.hwnd, WM_LBUTTONUP, 0, _mkparam(self.x, self.y))
+        _restore_window(self.hwnd, self.wl, self.wt)
+
+
 def post_swipe(hwnd, sx1: int, sy1: int, sx2: int, sy2: int,
                steps: int = 12, duration: float = 0.25,
-               hold: float = 0.18) -> None:
+               hold: float = 0.3) -> None:
     """Drag from screen (sx1,sy1) to (sx2,sy2), MAA touch_down/move/up style.
 
     The cursor stays fixed; the window is moved so that, relative to the
@@ -353,7 +439,7 @@ def post_swipe(hwnd, sx1: int, sy1: int, sx2: int, sy2: int,
     # settle at the end point: stationary samples + a still hold so the
     # client reads zero velocity at release (no fling / inertia)
     lp2 = _mkparam(x2, y2)
-    settle = 6
+    settle = 8
     for _ in range(settle):
         _POST(hwnd, WM_MOUSEMOVE, MK_LBUTTON, lp2)
         time.sleep(max(0.005, hold / settle))
